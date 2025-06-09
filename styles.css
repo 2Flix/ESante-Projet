@@ -70,3 +70,26 @@ header {
   font-weight: bold;
   cursor: pointer;
 }
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 400px;
+}
+
+label {
+  margin-bottom: 0.3rem;
+  font-weight: bold;
+}
+
+/* le css pour l'alignement des boutons radio */
+.radio-option {
+  display: flex; 
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+}
