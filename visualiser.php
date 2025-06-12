@@ -3,8 +3,9 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Visualiser Image</title>
+  <title>Scanalytix - Visualiser Image</title>
   <link rel="stylesheet" href="/ESANTE2/styles.css" />
+  <link rel="icon" href="/ESANTE2/favicon.png" type="image/png" />
 </head>
 <body>
   <?php include 'header.php'; ?>
