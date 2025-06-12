@@ -1,168 +1,136 @@
-<?php include 'upload_handler.php'; ?>
+<?php
+// analyse.php
+$image = isset($_GET['image']) ? $_GET['image'] : null;
+?>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Analyse</title>
-  <link rel="stylesheet" href="/ESANTE2/styles.css" />
+  <meta charset="UTF-8">
+  <title>Analyse d'image</title>
+  <link rel="stylesheet" href="/ESANTE/styles.css">
 </head>
 <body>
   <?php include 'header.php'; ?>
+
   <div class="container">
     <aside class="sidebar-left">
       <h3>Mes Images</h3>
       <div class="image-list">
         <?php
-          $images = glob("../uploads/*.{jpg,jpeg,png,gif}", GLOB_BRACE);
+          $images = glob(__DIR__ . "/uploads/*.{jpg,jpeg,png,gif}", GLOB_BRACE);
           foreach ($images as $img) {
-            $basename = basename($img);
-            echo "<div class='img-thumb' onclick=\"showImage('../uploads/$basename')\">
-                    <img src='../uploads/$basename' alt='' />
-                  </div>";
+              $basename = basename($img);
+              echo "<div class='img-thumb' onclick=\"location.href='analyse.php?image=" . urlencode($basename) . "'\">
+                      <img src='uploads/$basename' alt='miniature' />
+                    </div>";
           }
         ?>
       </div>
     </aside>
-    <main class="image-area" id="display-area">
-      <div id="image-container">
+
+    <main class="image-area">
+      <?php if ($image): ?>
+        <img id="selected-image" src="uploads/<?php echo htmlspecialchars($image); ?>" alt="Image sélectionnée" style="max-width: 90%; max-height: 90%;">
+      <?php else: ?>
         <p>Sélectionnez une image à gauche</p>
-      </div>
-      <canvas id="zoom-canvas" width="200" height="200" style="border: 1px solid #ccc; display: none; margin-top: 10px;"></canvas>
-      <div id="zoom-controls" style="display: none; margin-top: 10px;">
-        <button onclick="zoomIn()">+</button>
-        <button onclick="zoomOut()">–</button>
-      </div>
+      <?php endif; ?>
     </main>
+
+    <!-- Boutons d'action -->
     <aside class="sidebar-right">
-      <button>Analyser</button>
+      <form action="convolution.php" method="POST" style="margin-top: 10px;">
+        <input type="hidden" name="image" value="<?php echo htmlspecialchars($image ?? ''); ?>">
+        <label for="strength">Force de filtrage :</label>
+        
+        <input type="number" step="0.1" min="0.1" name="strength" id="strength" value="1.0" required style="width: 60px;">
+        <button type="submit">Filtrage par convolution</button>
+      </form>
+
+      <form action="gaussian_blur.php" method="POST" style="margin-top: 10px;">
+        <input type="hidden" name="image" value="<?php echo htmlspecialchars($image ?? ''); ?>">
+        <label for="sigma">Flou gaussien (sigma):</label>
+        
+        <input type="number" step="0.1" min="0.1" name="sigma" id="sigma" value="1.0" required style="width: 60px;">
+        <button type="submit">Flou Gaussien</button>
+      </form>
+
+      <form action="combined.php" method="POST" style="margin-top: 10px;">
+        <input type="hidden" name="image" value="<?php echo htmlspecialchars($image ?? ''); ?>">
+        <label for="sigma">Flou gaussien (sigma):</label>
+        
+        <input type="number" step="0.1" min="0.1" name="sigma" id="sigma" value="1.0" required style="width: 60px;">
+        <label for="strength">Force de filtrage :</label> 
+    
+        <input type="number" step="0.1" min="0.1" name="strength" id="strength" value="1.0" required style="width: 60px;">
+        <button type="submit">Filtrage combiné</button>
+      </form>
+
       <button onclick="analyserImage()">Extraire infos</button>
-      <button>Mesurer</button>
-      <button>Exporter</button>
-      <canvas id="analyzer-canvas" style="display: none;"></canvas>
+      <canvas id="analyzer-canvas" style="display: none;"></canvas> <!-- canvas pour lire les pixels -->
       <p id="image-info"></p>
     </aside>
   </div>
 
   <script>
-    let zoomCenterX = 0;
-    let zoomCenterY = 0;
-    let zoomSize = 50;
-    let zoomFactor = 4;
-
-    function showImage(path) {
-      const area = document.getElementById('display-area');
-      currentImagePath = path;
-
-      const img = new Image();
-      img.id = "selected-image";
-      img.src = path;
-      img.alt = "Image sélectionnée";
-      img.style.maxWidth = "90%";
-      img.style.maxHeight = "90%";
-
-      img.onload = () => {
-        let imgContainer = document.getElementById('image-container');
-        imgContainer.innerHTML = '';  // vide juste l'image précédente
-        imgContainer.appendChild(img);
-
-        // Afficher les boutons et canvas pour le zoom
-        document.getElementById('zoom-canvas').style.display = 'none'; // caché tant qu'on clique pas
-        document.getElementById('zoom-controls').style.display = 'none';
-        document.getElementById('image-info').textContent = ''; // reset infos
-      };
-    }
-
-    function analyserImage() {
-      const img = document.getElementById('selected-image');
-      const info = document.getElementById('image-info');
-      const canvas = document.getElementById('analyzer-canvas');
-
-      if (!img || !img.complete || img.naturalWidth === 0) {
-        info.textContent = "Aucune image sélectionnée ou chargement en cours.";
+    function améliorerImage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const image = urlParams.get('image');
+      if (!image) {
+        alert("Veuillez sélectionner une image.");
         return;
       }
-
-      const context = canvas.getContext('2d');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      context.drawImage(img, 0, 0);
-
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      let min = 255, max = 0;
-
-      for (let i = 0; i < imageData.length; i += 4) {
-        const gray = imageData[i];
-        if (gray < min) min = gray;
-        if (gray > max) max = gray;
-      }
-
-      info.innerHTML = `
-        <strong>Dimensions :</strong> ${img.naturalWidth} x ${img.naturalHeight} px<br>
-        <strong>Niveau de gris :</strong> min = ${min}, max = ${max}
-      `;
+      window.location.href = `analyse.php?image=${encodeURIComponent(image)}&sharpen=1`;
     }
 
-    // Gestion du clic sur l'image pour afficher zoom + boutons
-    document.addEventListener('click', function (e) {
-      const img = document.getElementById('selected-image');
-      const canvas = document.getElementById('zoom-canvas');
-      const controls = document.getElementById('zoom-controls');
+    function showImage(path) {
+       const area = document.getElementById('display-area');
+  currentImagePath = path;
 
-      if (!img || e.target.id !== 'selected-image') return;
+  // Crée dynamiquement l'image avec onload
+  const img = new Image();
+  img.id = "selected-image";
+  img.src = path;
+  img.alt = "Image sélectionnée";
+  img.style.maxWidth = "90%";
+  img.style.maxHeight = "90%";
 
-      const rect = img.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+  // Une fois que l’image est complètement chargée, on l’ajoute à la zone
+  img.onload = () => {
+    area.innerHTML = '';
+    area.appendChild(img);
+  };
+    }
+     function analyserImage() {
+    const img = document.getElementById('selected-image');
+    const info = document.getElementById('image-info');
+    const canvas = document.getElementById('analyzer-canvas');
 
-      const scaleX = img.naturalWidth / img.width;
-      const scaleY = img.naturalHeight / img.height;
-      zoomCenterX = x * scaleX;
-      zoomCenterY = y * scaleY;
+    if (!img || !img.complete || img.naturalWidth === 0) {
+  info.textContent = "Aucune image sélectionnée ou chargement en cours.";
+  return;
+}
 
-      zoomSize = 50;
-      zoomFactor = 4;
+    const context = canvas.getContext('2d');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    context.drawImage(img, 0, 0);
 
-      drawZoom(img, canvas);
-      canvas.style.display = 'block';
-      controls.style.display = 'block';
-    });
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let min = 255, max = 0;
 
-    function drawZoom(img, canvas) {
-      const zoomCanvasSize = zoomSize * zoomFactor;
-      canvas.width = zoomCanvasSize;
-      canvas.height = zoomCanvasSize;
-
-      const ctx = canvas.getContext('2d');
-      const hiddenCanvas = document.createElement('canvas');
-      hiddenCanvas.width = img.naturalWidth;
-      hiddenCanvas.height = img.naturalHeight;
-      const hiddenCtx = hiddenCanvas.getContext('2d');
-      hiddenCtx.drawImage(img, 0, 0);
-
-      ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(
-        hiddenCanvas,
-        zoomCenterX - zoomSize / 2, zoomCenterY - zoomSize / 2,
-        zoomSize, zoomSize,
-        0, 0,
-        zoomCanvasSize, zoomCanvasSize
-      );
+    for (let i = 0; i < imageData.length; i += 4) {
+      // Niveaux de gris → on suppose que R = G = B
+      const gray = imageData[i]; // R
+      if (gray < min) min = gray;
+      if (gray > max) max = gray;
     }
 
-    function zoomIn() {
-      zoomFactor = Math.min(zoomFactor + 1, 10);
-      const img = document.getElementById('selected-image');
-      const canvas = document.getElementById('zoom-canvas');
-      drawZoom(img, canvas);
-    }
-
-    function zoomOut() {
-      zoomFactor = Math.max(zoomFactor - 1, 1);
-      const img = document.getElementById('selected-image');
-      const canvas = document.getElementById('zoom-canvas');
-      drawZoom(img, canvas);
-    }
+    info.innerHTML = `
+      <strong>Dimensions :</strong> ${img.naturalWidth} x ${img.naturalHeight} px<br>
+      <strong>Niveau de gris :</strong> min = ${min}, max = ${max}
+    `;
+  }
   </script>
 </body>
 </html>
