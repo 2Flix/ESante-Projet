@@ -14,11 +14,11 @@
       <h3>Mes Images</h3>
       <div class="image-list">
         <?php
-          $images = glob("../uploads/*.{jpg,jpeg,png,gif}", GLOB_BRACE);
+          $images = glob("uploads/*.{jpg,jpeg,png,gif}", GLOB_BRACE);
           foreach ($images as $img) {
             $basename = basename($img);
-            echo "<div class='img-thumb' onclick=\"selectImage('../uploads/$basename', '$basename')\">
-                    <img src='../uploads/$basename' alt='' />
+            echo "<div class='img-thumb' onclick=\"selectImage('uploads/$basename', '$basename')\">
+                    <img src='uploads/$basename' alt='' />
                     <div class='image-indicator' id='indicator-$basename'></div>
                   </div>";
           }
@@ -32,7 +32,8 @@
       <div id="formContainer">
         <p id="formInitialMessage" style="color: red; margin-bottom: 1rem;">Sélectionnez une image et remplissez le formulaire.</p>
         <form id="formulaire" method="post" action="traitement_form.php" enctype="multipart/form-data">
-          <input type="hidden" name="selectedImage" id="selectedImageInput" value="" />
+            
+            <input type="hidden" name="selectedImage" id="selectedImageInput" value="" />
             
             <div class="form-group">
                 <label for="prenom">Prénom :</label>
@@ -56,7 +57,6 @@
                         <input type="radio" id="homme" name="sexe" value="Homme" required />
                         <label for="homme">Homme</label>
                     </div>
-
                     <div class="radio-option">
                         <input type="radio" id="femme" name="sexe" value="Femme" required />
                         <label for="femme">Femme</label>
@@ -68,9 +68,10 @@
                 <label for="taille">Taille (cm) :</label>
                 <input type="number" name="taille" id="taille" placeholder="Taille en cm" min="30" max="300" required />
             </div>
-    
-          <input class="sendButton" type="submit" name="InscriptionEnvoyer" id="btn_send" value="Sign Up"/>
-        </form>  
+            
+            <input class="sendButton" type="submit" name="InscriptionEnvoyer" id="btn_send" value="Sign Up"/>
+
+        </form>
           
         <div id="outputContainer" class="output-display" style="display: none;">
           </div>
@@ -84,17 +85,13 @@
     function selectImage(path, basename) {
       currentSelectedImage = basename;
       
-      // Afficher l'image
       const area = document.getElementById('display-area');
       area.innerHTML = `<img src="${path}" alt="Image sélectionnée" style="max-width: 90%; max-height: 90%;">`;
       
-      // Mettre à jour le champ caché
       document.getElementById('selectedImageInput').value = basename;
       
-      // Vérifier s'il y a des données pour cette image
       loadImageData(basename);
       
-      // Réinitialiser l'affichage
       showForm();
     }
 
@@ -103,16 +100,13 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
-            // Afficher directement les données formatées
             showFormattedData(data.data, imageName);
             
-            // Ajouter un indicateur visuel que cette image a des données
             const indicator = document.getElementById(`indicator-${imageName}`);
             if (indicator) {
               indicator.style.display = 'block';
             }
           } else {
-            // Réinitialiser le formulaire pour une nouvelle saisie
             showForm();
             document.getElementById('formulaire').reset();
             document.getElementById('selectedImageInput').value = imageName;
@@ -127,11 +121,9 @@
     }
 
     function showFormattedData(formData, imageName) {
-      // Cacher le formulaire et le message initial
       document.getElementById('formInitialMessage').style.display = 'none';
       document.getElementById('formulaire').style.display = 'none';
 
-      // Afficher les données formatées
       const outputContainer = document.getElementById('outputContainer');
       outputContainer.innerHTML = `
           <h3>Informations sauvegardées :</h3>
@@ -145,17 +137,14 @@
       `;
       outputContainer.style.display = 'block';
 
-      // Ajouter le bouton pour modifier
       const editButton = document.createElement('button');
       editButton.textContent = 'Modifier les informations';
       editButton.onclick = function() {
-          // Remplir le formulaire avec les données existantes pour modification
           document.getElementById('prenom').value = formData.prenom;
           document.getElementById('nom').value = formData.nom;
           document.getElementById('age').value = formData.age;
           document.getElementById('taille').value = formData.taille;
           
-          // Sélectionner le bon bouton radio
           if (formData.sexe === 'Homme') {
             document.getElementById('homme').checked = true;
           } else if (formData.sexe === 'Femme') {
@@ -164,7 +153,6 @@
           
           document.getElementById('selectedImageInput').value = imageName;
           
-          // Afficher le formulaire
           showForm();
           document.getElementById('formInitialMessage').textContent = 'Modification des données existantes.';
           document.getElementById('formInitialMessage').style.color = 'blue';
@@ -186,14 +174,12 @@
           return;
         }
 
-        // 1. On récupère les données du formulaire
         const prenom = document.getElementById('prenom').value;
         const nom = document.getElementById('nom').value;
         const age = document.getElementById('age').value;
         const taille = document.getElementById('taille').value;
         const sexe = document.querySelector('input[name="sexe"]:checked') ? document.querySelector('input[name="sexe"]:checked').value : '';
 
-        // On crée un objet FormData pour envoyer les données comme un formulaire HTML de base
         const formData = new FormData();
         formData.append('prenom', prenom);
         formData.append('nom', nom);
@@ -203,7 +189,6 @@
         formData.append('selectedImage', currentSelectedImage);
         formData.append('InscriptionEnvoyer', 'Sign Up');
 
-        // 2. On envoie les données au fichier traitement_form.php
         fetch('traitement_form.php', {
             method: 'POST',
             body: formData
@@ -212,7 +197,6 @@
         .then(data => {
             if (data.success) {
                 
-                // 3. Va remplacer le formulaire par le nouveau contenu
                 document.getElementById('formInitialMessage').style.display = 'none';
                 document.getElementById('formulaire').style.display = 'none';
 
@@ -229,19 +213,17 @@
                 `;
                 outputContainer.style.display = 'block';
 
-                // Ajouter un indicateur visuel sur l'image
                 const indicator = document.getElementById(`indicator-${currentSelectedImage}`);
                 if (indicator) {
                   indicator.style.display = 'block';
                 }
 
-                 // On ajoute un bouton pour recharger la page si l'utilisateur veut revenir au formulaire
                 const resetButton = document.createElement('button');
                 resetButton.textContent = 'Continuer à modifier';
                 resetButton.onclick = function() {
                     showForm();
                 };
-                outputContainer.appendChild(resetButton); // on ajoute le bouton après les informations
+                outputContainer.appendChild(resetButton);
                 
             } else {
                 alert(data.message);
