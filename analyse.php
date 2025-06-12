@@ -7,8 +7,9 @@ $image = isset($_GET['image']) ? $_GET['image'] : null;
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Analyse d'image</title>
+  <title>Scanalytix – Analyse</title>
   <link rel="stylesheet" href="/ESANTE/styles.css">
+  <link rel="icon" href="/ESANTE/favicon.png" type="image/png" />
 </head>
 <body>
   <?php include 'header.php'; ?>
