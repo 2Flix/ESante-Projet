@@ -39,8 +39,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'timestamp' => date('Y-m-d H:i:s')
     ];
 
-    // Sauvegarder dans un fichier JSON
-    $dataDir = __DIR__ . '/../data/';
+    // Sauvegarder dans un fichier JSON - CORRECTION ICI
+    $dataDir = __DIR__ . '/data/';  // Changé de '/../data/' vers '/data/'
     if (!file_exists($dataDir)) {
         mkdir($dataDir, 0777, true);
     }
