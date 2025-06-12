@@ -1,73 +1,79 @@
-<?php /*
-// Vérifie que le formulaire a bien été soumis via POST
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $prenom = htmlspecialchars($_POST["prenom"]);
-    $nom = htmlspecialchars($_POST["nom"]);
-    $age = htmlspecialchars($_POST["age"]);
-    $sexe = htmlspecialchars($_POST["sexe"]);
-    $taille = htmlspecialchars($_POST["taille"]);
+<?php
+header('Content-Type: application/json; charset=utf-8');
 
+// Définir le fuseau horaire français
+date_default_timezone_set('Europe/Paris');
 
-        // Les champs sont remplis ?
-    if (empty($prenom) || empty($nom) || empty($age) || empty($sexe) || empty($taille)) {
-        echo "Tous les champs sont obligatoires.";
-        exit;
-    }
-    ?>
-
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <title>Vos informations ci-dessous</title>
-    </head>
-    <body>
-        <h1>Vos Informations :</h1>
-        <p><strong>Prenom :</strong> <?= $prenom ?></p>
-        <p><strong>Nom :</strong> <?= $nom ?></p>
-        <p><strong>Age :</strong> <?= $age ?> ans</p>
-        <p><strong>Sexe :</strong> <?= $sexe ?></p>
-        <p><strong>Taille :</strong> <?= $taille ?> cm</p>
-    </body>
-    </html>
-
-    <?php
-} else {
-    echo "Formulaire non soumis.";
-} */
-
-// On veut s'assurer que le navigateur interprète la réponse comme du HTML
-header('Content-Type: text/html; charset=utf-8');
-
-// Va vérifier que le formulaire a bien été soumis via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $prenom = htmlspecialchars($_POST["prenom"] ?? '');
     $nom = htmlspecialchars($_POST["nom"] ?? '');
     $age = htmlspecialchars($_POST["age"] ?? '');
     $sexe = htmlspecialchars($_POST["sexe"] ?? '');
     $taille = htmlspecialchars($_POST["taille"] ?? '');
+    $selectedImage = htmlspecialchars($_POST["selectedImage"] ?? '');
 
-    // Les champs sont remplis ?
+    // Validation des champs
     if (empty($prenom) || empty($nom) || empty($age) || empty($sexe) || empty($taille)) {
-        echo '<div style="color: red; font-weight: bold; padding: 10px; border: 1px solid red; background-color: #ffe6e6; border-radius: 5px;">';
-        echo 'Erreur : Tous les champs sont obligatoires.';
-        echo '</div>';
+        echo json_encode([
+            'success' => false,
+            'message' => 'Erreur : Tous les champs sont obligatoires.'
+        ]);
         exit;
     }
 
-    // Si toutes les validations sont passées, on peut afficher le HTML des informations soumises
-    ?>
-    <h1>Vos Informations :</h1>
-    <p><strong>Prenom :</strong> <?= $prenom ?></p>
-    <p><strong>Nom :</strong> <?= $nom ?></p>
-    <p><strong>Age :</strong> <?= $age ?> ans</p>
-    <p><strong>Sexe :</strong> <?= $sexe ?></p>
-    <p><strong>Taille :</strong> <?= $taille ?> cm</p>
-    <?php
-} else {
-    echo '<div style="color: orange; font-weight: bold; padding: 10px; border: 1px solid orange; background-color: #fff3e0; border-radius: 5px;">';
-    echo 'Accès non autorisé : Ce fichier doit être appelé via une soumission de formulaire POST.';
-    echo '</div>';
-}
+    if (empty($selectedImage)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Erreur : Veuillez sélectionner une image.'
+        ]);
+        exit;
+    }
 
+    // Préparer les données à sauvegarder
+    $formData = [
+        'prenom' => $prenom,
+        'nom' => $nom,
+        'age' => $age,
+        'sexe' => $sexe,
+        'taille' => $taille,
+        'timestamp' => date('Y-m-d H:i:s')
+    ];
+
+    // Sauvegarder dans un fichier JSON
+    $dataDir = __DIR__ . '/../data/';
+    if (!file_exists($dataDir)) {
+        mkdir($dataDir, 0777, true);
+    }
+
+    $dataFile = $dataDir . 'image_data.json';
+    $allData = [];
+    
+    // Charger les données existantes
+    if (file_exists($dataFile)) {
+        $json = file_get_contents($dataFile);
+        $allData = json_decode($json, true) ?: [];
+    }
+
+    // Ajouter/mettre à jour les données pour cette image
+    $allData[$selectedImage] = $formData;
+
+    // Sauvegarder
+    if (file_put_contents($dataFile, json_encode($allData, JSON_PRETTY_PRINT))) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Données sauvegardées avec succès pour l\'image ' . $selectedImage,
+            'data' => $formData
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Erreur lors de la sauvegarde des données.'
+        ]);
+    }
+} else {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Accès non autorisé : Ce fichier doit être appelé via une soumission de formulaire POST.'
+    ]);
+}
 ?>
