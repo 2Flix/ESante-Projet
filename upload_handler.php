@@ -1,6 +1,6 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['image'])) {
-    $targetDir = __DIR__ . '/../uploads/';
+    $targetDir = __DIR__ . '/uploads/';  
     if (!file_exists($targetDir)) mkdir($targetDir, 0777, true);
 
     $file = $_FILES['image'];
