@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Analyse</title>
-  <link rel="stylesheet" href="ESANTE/styles.css" />
+  <link rel="stylesheet" href="/ESANTE2/styles.css" />
 </head>
 <body>
   <?php include 'header.php'; ?>
