@@ -3,8 +3,9 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Traitement</title>
+  <title>Scanalytix - Traitement</title>
   <link rel="stylesheet" href="/ESANTE/styles.css" />
+  <link rel="icon" href="/ESANTE/favicon.png" type="image/png" />
 </head>
 <body>
   <?php include 'header.php'; ?>
