@@ -1,123 +1,109 @@
-<?php include 'upload_handler.php'; ?>
+<?php
+$image = isset($_GET['image']) ? $_GET['image'] : null;
+?>
+
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Scanalytix - Traitement</title>
-  <link rel="stylesheet" href="/ESANTE/styles.css" />
-  <link rel="icon" href="/ESANTE/favicon.png" type="image/png" />
+  <meta charset="UTF-8">
+  <title>Scanalytix – Traitement</title>
+  <link rel="stylesheet" href="/ESANTE2/styles.css">
+  <link rel="icon" href="/ESANTE2/favicon.png" type="image/png" />
 </head>
+
 <body>
   <?php include 'header.php'; ?>
   <div class="container">
     <aside class="sidebar-left">
       <h3>Mes Images</h3>
-      <div class="image-list" id="image-list-container">
+      <div class="image-list">
         <?php
-          $images = glob("../uploads/*.{jpg,jpeg,png,gif}", GLOB_BRACE);
+          $images = glob("uploads/*.{jpg,jpeg,png,gif}", GLOB_BRACE);
           foreach ($images as $img) {
             $basename = basename($img);
-            // On s'assure d'envoyer le chemin web correct à showImage
-            echo "<div class='img-thumb' onclick=\"showImage('../uploads/$basename')\">
-                    <img src='../uploads/$basename' alt='' />
+            echo "<div class='img-thumb' onclick=\"selectImage('uploads/$basename', '$basename')\">
+                    <img src='uploads/$basename' alt='' />
+                    <div class='image-indicator' id='indicator-$basename'></div>
                   </div>";
           }
         ?>
       </div>
     </aside>
-    <main class="image-area" id="display-area">
-      <p>Sélectionnez une image à gauche</p>
+
+    <main id="display-area" class="image-area">
+      <?php if ($image): ?>
+        <div id="zoom-container" style="overflow: hidden; position: relative; width: 100%; height: 100%;">
+          <img id="selected-image" src="uploads/<?php echo htmlspecialchars($image); ?>" alt="Image sélectionnée" style="transform-origin: top left; cursor: grab;">
+        </div>
+      <?php else: ?>
+        <p>Sélectionnez une image à gauche</p>
+      <?php endif; ?>
     </main>
+
     <aside class="sidebar-right">
-      <button>Filtrer</button>
-      <button>Améliorer</button>
-      <button onclick="rotateSelectedImage(-90)">Rotation Droite (90° Horaire)</button>
-      <button onclick="rotateSelectedImage(90)">Rotation Gauche (90° Anti-horaire)</button>
-      <button onclick="rotateSelectedImage(180)">Rotation À l'Envers (180°)</button>
-      <button onclick="resetImageOrientation()">Remettre à Zéro</button> <button>Sauvegarder</button>
+
+      <form id="laplacien-form" action="laplacien.php" method="POST" style="margin-top: 10px;">
+        <input type="hidden" name="image" id="laplacien-image" value="">
+        <label for="strength">Force du filtre Laplacien :</label>
+        <input type="number" step="0.1" min="0" name="strength" id="strength" value="1.0" required style="width: 40px;">
+        <button type="submit">Appliquer Laplacien</button>
+      </form>
+
+      <form id="gaussian-form" action="gaussian_blur.php" method="POST" style="margin-top: 20px;">
+        <input type="hidden" name="image" id="gaussian-image" value="">
+        <label for="sigma">Degré de flou :</label>
+        <input type="number" step="0.1" min="0.1" name="sigma" id="sigma" value="1.0" required style="width: 40px;">
+        <button type="submit">Appliquer le Flou Gaussien</button>
+      </form>
+
+      <h4 style="margin-bottom: 5px;">Rotation</h4>
+      <button type="button" onclick="rotateImage(-90)">↺ Anti-horaire 90°</button>
+      <button type="button" onclick="rotateImage(90)">↻ Horaire 90°</button>
+
+      <label style="margin-top: 20px" for="zoom-range">Zoom</label>
+      <input type="range" id="zoom-range" min="0" max="1" step="0.001" value="0">
+      
     </aside>
   </div>
+
+  <script src="/ESANTE2/scripts/display.js"></script>
+  <script src="/ESANTE2/scripts/zoom2.js"></script>
+  <script src="/ESANTE2/scripts/filters.js"></script>
+  <script src="/ESANTE2/scripts/rotation.js"></script>
+
   <script>
-let currentImagePath = null;
-let originalSelectedImagePath = null;
-
-// Fonction pour afficher une image dans la zone principale
-function showImage(path) {
-  const updatedPath = path + '?t=' + new Date().getTime();
-  currentImagePath = path; // sans timestamp
-  if (!originalSelectedImagePath) {
-    originalSelectedImagePath = path;
-  }
-  const area = document.getElementById('display-area');
-  area.innerHTML = `<img src="${updatedPath}" alt="Image sélectionnée" style="max-width: 90%; max-height: 90%;">`;
-}
-
-
-// Fonction pour recharger la liste des miniatures (sidebar-left)
-function reloadImageList() {
-    fetch('get_image_list.php')
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('image-list-container').innerHTML = html;
-        })
-        .catch(error => {
-            console.error('Erreur lors du rechargement de la liste d\'images :', error);
-        });
-}
-
-// Rotation de l'image avec un angle spécifique
-function rotateSelectedImage(angle) {
-  if (!currentImagePath) {
-    alert("Veuillez d'abord sélectionner une image.");
-    return;
-  }
-
-  console.log(`Tentative de rotation de l'image : ${currentImagePath} avec un angle de ${angle} degrés.`);
-
-  fetch('/ESANTE/rotate.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    // On envoie l'angle en plus du chemin de l'image
-    body: `imagePath=${encodeURIComponent(currentImagePath)}&angle=${encodeURIComponent(angle)}`
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.status === 'success') {
-      console.log('Rotation réussie ! Nouvelle image créée à :', data.newImagePath);
-      currentImagePath = data.newImagePath;
-      showImage(data.newImagePath);  
-      // Recharger la liste des miniatures pour inclure la nouvelle image
-      reloadImageList();
-    } else {
-      console.error('Erreur de rotation :', data.message);
-      alert('Erreur : ' + data.message);
+  // Initialiser le zoom si l'image est deja presente
+  document.addEventListener('DOMContentLoaded', function() {
+    const selectedImage = document.getElementById('selected-image');
+    if (selectedImage && selectedImage.src) {
+      selectedImage.onload = function() {
+        if (typeof initZoom === 'function') {
+          initZoom();
+        }
+        if (typeof resetRotationState === 'function') {
+          resetRotationState();
+        }
+        if (typeof initRotation === 'function') {
+          initRotation();
+        }
+      };
+      
+      // Si l'image est deja chargee
+      if (selectedImage.complete) {
+        if (typeof initZoom === 'function') {
+          initZoom();
+        }
+        if (typeof resetRotationState === 'function') {
+          resetRotationState();
+        }
+        if (typeof initRotation === 'function') {
+          initRotation();
+        }
+      }
     }
-  })
-  .catch(error => {
-    console.error('Erreur réseau ou script :', error);
-    alert('Une erreur inattendue est survenue lors de la communication avec le serveur.');
   });
-}
-
-// fonction pour remettre l'image à son orientation originale
-function resetImageOrientation() {
-    if (!originalSelectedImagePath) {
-        alert("Aucune image originale sélectionnée pour réinitialiser.");
-        return;
-    }
-    // Afficher l'image originale
-    showImage(originalSelectedImagePath);
-
-}
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Si aucune image n'est affichée au chargement, réinitialise
-    if (!document.querySelector('#display-area img')) {
-        currentImagePath = null;
-        originalSelectedImagePath = null;
-    }
-});
   </script>
+
 </body>
 </html>
