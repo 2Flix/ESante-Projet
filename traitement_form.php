@@ -1,9 +1,10 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-// Définir le fuseau horaire français
+// Definir le fuseau horaire francais
 date_default_timezone_set('Europe/Paris');
 
+// Verifier que la requete est bien de type POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $prenom = htmlspecialchars($_POST["prenom"] ?? '');
     $nom = htmlspecialchars($_POST["nom"] ?? '');
@@ -29,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    // Préparer les données à sauvegarder
+    // Preparer les donnees à sauvegarder
     $formData = [
         'prenom' => $prenom,
         'nom' => $nom,
@@ -39,8 +40,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'timestamp' => date('Y-m-d H:i:s')
     ];
 
-    // Sauvegarder dans un fichier JSON - CORRECTION ICI
-    $dataDir = __DIR__ . '/data/';  // Changé de '/../data/' vers '/data/'
+    // Sauvegarder dans un fichier JSON -
+    $dataDir = __DIR__ . '/data/';  
     if (!file_exists($dataDir)) {
         mkdir($dataDir, 0777, true);
     }
@@ -48,13 +49,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $dataFile = $dataDir . 'image_data.json';
     $allData = [];
     
-    // Charger les données existantes
+    // Charger les donnees existantes
     if (file_exists($dataFile)) {
         $json = file_get_contents($dataFile);
         $allData = json_decode($json, true) ?: [];
     }
 
-    // Ajouter/mettre à jour les données pour cette image
+    // Ajouter/mettre à jour les donnees pour cette image
     $allData[$selectedImage] = $formData;
 
     // Sauvegarder
