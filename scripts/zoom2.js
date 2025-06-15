@@ -1,110 +1,140 @@
 function initZoom() {
-  const slider = document.getElementById('zoom-range'); 
-  const image = document.getElementById('selected-image'); 
-  const container = document.getElementById('zoom-container'); 
+  const slider = document.getElementById('zoom-range');
+  const image = document.getElementById('selected-image');
+  const container = document.getElementById('zoom-container');
 
-  // Si l'un des éléments n'existe pas, arrêter la fonction
   if (!slider || !image || !container) return;
 
-  // Réinitialise le slider à 0 (pas de zoom)
+  // Réinitialiser le slider à 0 (position de départ)
   slider.value = 0;
-  // Applique un zoom de 1 (normal) et garde la rotation actuelle
+  // Ne pas écraser la rotation existante, juste appliquer le scale
   applyTransform(image, 1, getCurrentRotation());
 
-  // Écoute les changements de valeur du slider
   slider.addEventListener('input', () => {
     const sliderValue = parseFloat(slider.value);
-    const scale = 1 + sliderValue; // Conversion du slider (0–2) en facteur de zoom (1–3)
-
+    // Convertir la valeur du slider (0-2) en échelle (1-3)
+    const scale = 1 + sliderValue;
+    
     if (scale > 1) {
-      // Si zoom > 1, créer un wrapper si pas déjà présent pour permettre le scroll
+      // Créer un wrapper pour forcer les barres de défilement
       if (!container.querySelector('.zoom-wrapper')) {
         const wrapper = document.createElement('div');
         wrapper.className = 'zoom-wrapper';
-
-        // Déplace l'image dans le wrapper
+        
+        // Déplacer l'image dans le wrapper
         const img = container.removeChild(image);
         wrapper.appendChild(img);
         container.appendChild(wrapper);
-
-        // Préparer le conteneur pour afficher des barres de mouvement
+        
+        // Ajuster le container pour le scroll
         container.style.overflow = 'auto';
         container.style.display = 'block';
         container.style.textAlign = 'left';
         container.style.padding = '0';
       }
-
-      // Obtenir le wrapper et les dimensions utiles
+      
       const wrapper = container.querySelector('.zoom-wrapper');
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
-
+      
+      // Calculer les dimensions en tenant compte de la rotation
       const rotation = getCurrentRotation();
       const dimensions = getRotatedDimensions(image.naturalWidth, image.naturalHeight, rotation);
-
-      // Dimensions de l'image après application du zoom et de la rotation
+      
+      // Calculer les dimensions de l'image zoomée ET rotée
       const scaledWidth = dimensions.width * scale;
       const scaledHeight = dimensions.height * scale;
-
-      // Ajuste la taille du wrapper pour contenir l'image agrandie
+      
+      // Le wrapper doit être assez grand pour contenir l'image zoomée et rotée
       wrapper.style.width = Math.max(scaledWidth, containerWidth) + 'px';
       wrapper.style.height = Math.max(scaledHeight, containerHeight) + 'px';
       wrapper.style.display = 'inline-block';
       wrapper.style.position = 'relative';
-
-      // Calcul du décalage pour centrer l'image dans le wrapper
+      
+      // Centrer l'image dans le wrapper
       const offsetX = Math.max(0, (scaledWidth - image.naturalWidth * scale) / 2);
       const offsetY = Math.max(0, (scaledHeight - image.naturalHeight * scale) / 2);
-
-      // Centrer horizontalement si nécessaire
+      
+      // Si l'image zoomée est plus petite que le container, la centrer
       if (scaledWidth < containerWidth) {
         wrapper.style.marginLeft = ((containerWidth - scaledWidth) / 2) + 'px';
       } else {
         wrapper.style.marginLeft = '0';
       }
-
-      // Centrer verticalement si nécessaire
+      
       if (scaledHeight < containerHeight) {
         wrapper.style.marginTop = ((containerHeight - scaledHeight) / 2) + 'px';
       } else {
         wrapper.style.marginTop = '0';
       }
-
-      // Position absolue de l'image à l’intérieur du wrapper
+      
+      // Positionner l'image au centre du wrapper
       image.style.position = 'absolute';
       image.style.left = offsetX + 'px';
       image.style.top = offsetY + 'px';
-
-      // Applique le zoom et conserve la rotation
+      
+      // Appliquer le zoom ET conserver la rotation
       applyTransform(image, scale, getCurrentRotation());
       image.style.transformOrigin = 'center';
-
+      
     } else {
-      // Si zoom <= 1 : retour au mode affichage centré "normal"
+      // Mode normal : revenir au mode centré simple
       const wrapper = container.querySelector('.zoom-wrapper');
       if (wrapper) {
-        // Déplace l'image hors du wrapper et supprime le wrapper
         const img = wrapper.removeChild(image);
         container.removeChild(wrapper);
         container.appendChild(img);
-
-        // Restaure l'affichage centré
+        
         container.style.overflow = 'hidden';
         container.style.display = 'flex';
         container.style.justifyContent = 'center';
         container.style.alignItems = 'center';
         container.style.textAlign = 'initial';
         container.style.padding = '0';
-
-        // Réinitialise le positionnement de l'image
+        
+        // Réinitialiser le positionnement de l'image
         image.style.position = 'static';
         image.style.left = 'auto';
         image.style.top = 'auto';
       }
-
-      // Applique un zoom normal (1) et conserve la rotation
+      
+      // Appliquer scale 1 mais conserver la rotation
       applyTransform(image, 1, getCurrentRotation());
       image.style.transformOrigin = 'center';
     }
   });
+}
+
+// Fonction pour calculer les dimensions d'une image après rotation
+function getRotatedDimensions(width, height, rotation) {
+  const radians = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
+  
+  const newWidth = width * cos + height * sin;
+  const newHeight = width * sin + height * cos;
+  
+  return {
+    width: newWidth,
+    height: newHeight
+  };
+}
+
+// Fonction utilitaire pour appliquer les transformations combinées
+function applyTransform(element, scale, rotation) {
+  element.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+}
+
+// Fonction pour récupérer la rotation actuelle
+function getCurrentRotation() {
+  return window.currentRotation || 0;
+}
+
+// Fonction pour récupérer le zoom actuel
+function getCurrentScale() {
+  const slider = document.getElementById('zoom-range');
+  if (slider) {
+    return 1 + parseFloat(slider.value);
+  }
+  return 1;
 }
