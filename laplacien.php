@@ -1,21 +1,21 @@
 <?php
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['image'], $_POST['sigma'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['image'], $_POST['strength'])) {
     $imageName = basename($_POST['image']);
-    $sigma = floatval($_POST['sigma']);
+    $strength = floatval($_POST['strength']);
     $inputPath = __DIR__ . '/uploads/' . $imageName;
-    $outputName = 'gaussian_' . $imageName;
+    $outputName = 'laplacien_' . $imageName;
     $outputPath = __DIR__ . '/uploads/' . $outputName;
 
-    $scriptPath = __DIR__ . '/gaussian_blur.py';
+    $scriptPath = __DIR__ . '/laplacien.py';
 
-    $command = "python \"$scriptPath\" \"$inputPath\" \"$outputPath\" $sigma 2>&1";
+    $command = "python \"$scriptPath\" \"$inputPath\" \"$outputPath\" $strength 2>&1";
     exec($command, $output, $returnCode);
 
     if ($returnCode === 0) {
         header("Location: traitement.php?image=" . urlencode($outputName));
         exit();
     } else {
-        echo "<pre>Erreur lors du flou gaussien :\n";
+        echo "<pre>Erreur lors du laplacien :\n";
         print_r($output);
         echo "</pre>";
     }
@@ -23,4 +23,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['image'], $_POST['sigm
     echo "Paramètres manquants.";
 }
 ?>
-
