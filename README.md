@@ -8,4 +8,6 @@ Pour cela, il suffit d’ouvrir un terminal et de taper la commande suivante :
 
 **pip install opencv-python numpy scipy imageio**
 
+Cela téléchargera et installera automatiquement toutes les bibliothèques nécessaires. 
+Une fois l’installation terminée, vous pourrez exécuter les scripts sans problèmes.
 
