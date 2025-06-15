@@ -1,5 +1,11 @@
-# ESanté-Web
+# ESanté-Projet
 
-Important :
-Pour les analyses il faut avoir python d'installer et opencv numpy 
-Pour cela apres avoir installer python, il faut ouvrir son terminal et ecrire : pip install opencv-python numpy
+** Important : **
+
+Pour faire fonctionner correctement les codes il est essentiel d’installer certaines bibliothèques. 
+Celle ci ne sont pas incluses par défaut avec Python, donc il faut les installer manuellement. 
+Pour cela, il suffit d’ouvrir un terminal et de taper la commande suivante :
+
+** pip install opencv-python numpy scipy imageio **
+
+
