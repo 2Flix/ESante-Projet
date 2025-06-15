@@ -1,12 +1,14 @@
 <?php include 'upload_handler.php';?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
   <title>Scanalytix - Visualiser Image</title>
   <link rel="stylesheet" href="/ESANTE2/styles.css" />
   <link rel="icon" href="/ESANTE2/favicon.png" type="image/png" />
 </head>
+
 <body>
   <?php include 'header.php'; ?>
   <div class="container">
@@ -25,9 +27,11 @@
         ?>
       </div>
     </aside>
+
     <main class="image-area" id="display-area">
       <p>Sélectionnez une image à gauche</p>
     </main>
+
     <aside class="sidebar-right">
       <div id="formContainer">
         <p id="formInitialMessage" style="color: red; margin-bottom: 1rem;">Sélectionnez une image et remplissez le formulaire.</p>
@@ -74,167 +78,13 @@
         </form>
           
         <div id="outputContainer" class="output-display" style="display: none;">
-          </div>
+        </div>
       </div>
     </aside>
   </div>
 
-  <script>
-    let currentSelectedImage = '';
-
-    function selectImage(path, basename) {
-      currentSelectedImage = basename;
-      
-      const area = document.getElementById('display-area');
-      area.innerHTML = `<img src="${path}" alt="Image sélectionnée" style="max-width: 90%; max-height: 90%;">`;
-      
-      document.getElementById('selectedImageInput').value = basename;
-      
-      loadImageData(basename);
-      
-      showForm();
-    }
-
-    function loadImageData(imageName) {
-      fetch(`get_image_data.php?image=${encodeURIComponent(imageName)}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            showFormattedData(data.data, imageName);
-            
-            const indicator = document.getElementById(`indicator-${imageName}`);
-            if (indicator) {
-              indicator.style.display = 'block';
-            }
-          } else {
-            showForm();
-            document.getElementById('formulaire').reset();
-            document.getElementById('selectedImageInput').value = imageName;
-            document.getElementById('formInitialMessage').textContent = 'Aucune donnée pour cette image. Remplissez le formulaire.';
-            document.getElementById('formInitialMessage').style.color = 'orange';
-          }
-        })
-        .catch(error => {
-          console.error('Erreur lors du chargement des données:', error);
-          showForm();
-        });
-    }
-
-    function showFormattedData(formData, imageName) {
-      document.getElementById('formInitialMessage').style.display = 'none';
-      document.getElementById('formulaire').style.display = 'none';
-
-      const outputContainer = document.getElementById('outputContainer');
-      outputContainer.innerHTML = `
-          <h3>Informations sauvegardées :</h3>
-          <p><strong>Image :</strong> ${imageName}</p>
-          <p><strong>Prénom :</strong> ${formData.prenom}</p>
-          <p><strong>Nom :</strong> ${formData.nom}</p>
-          <p><strong>Age :</strong> ${formData.age} ans</p>
-          <p><strong>Sexe :</strong> ${formData.sexe}</p>
-          <p><strong>Taille :</strong> ${formData.taille} cm</p>
-          <p><small>Sauvegardé le : ${formData.timestamp}</small></p>
-      `;
-      outputContainer.style.display = 'block';
-
-      const editButton = document.createElement('button');
-      editButton.textContent = 'Modifier les informations';
-      editButton.onclick = function() {
-          document.getElementById('prenom').value = formData.prenom;
-          document.getElementById('nom').value = formData.nom;
-          document.getElementById('age').value = formData.age;
-          document.getElementById('taille').value = formData.taille;
-          
-          if (formData.sexe === 'Homme') {
-            document.getElementById('homme').checked = true;
-          } else if (formData.sexe === 'Femme') {
-            document.getElementById('femme').checked = true;
-          }
-          
-          document.getElementById('selectedImageInput').value = imageName;
-          
-          showForm();
-          document.getElementById('formInitialMessage').textContent = 'Modification des données existantes.';
-          document.getElementById('formInitialMessage').style.color = 'blue';
-      };
-      outputContainer.appendChild(editButton);
-    }
-
-    function showForm() {
-      document.getElementById('formInitialMessage').style.display = 'block';
-      document.getElementById('formulaire').style.display = 'block';
-      document.getElementById('outputContainer').style.display = 'none';
-    }
-
-    document.getElementById('formulaire').addEventListener('submit', function(event) {
-        event.preventDefault();
-
-        if (!currentSelectedImage) {
-          alert('Veuillez d\'abord sélectionner une image.');
-          return;
-        }
-
-        const prenom = document.getElementById('prenom').value;
-        const nom = document.getElementById('nom').value;
-        const age = document.getElementById('age').value;
-        const taille = document.getElementById('taille').value;
-        const sexe = document.querySelector('input[name="sexe"]:checked') ? document.querySelector('input[name="sexe"]:checked').value : '';
-
-        const formData = new FormData();
-        formData.append('prenom', prenom);
-        formData.append('nom', nom);
-        formData.append('age', age);
-        formData.append('sexe', sexe);
-        formData.append('taille', taille);
-        formData.append('selectedImage', currentSelectedImage);
-        formData.append('InscriptionEnvoyer', 'Sign Up');
-
-        fetch('traitement_form.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                
-                document.getElementById('formInitialMessage').style.display = 'none';
-                document.getElementById('formulaire').style.display = 'none';
-
-                const outputContainer = document.getElementById('outputContainer');
-                outputContainer.innerHTML = `
-                    <h3>Informations sauvegardées :</h3>
-                    <p><strong>Image :</strong> ${currentSelectedImage}</p>
-                    <p><strong>Prénom :</strong> ${data.data.prenom}</p>
-                    <p><strong>Nom :</strong> ${data.data.nom}</p>
-                    <p><strong>Age :</strong> ${data.data.age} ans</p>
-                    <p><strong>Sexe :</strong> ${data.data.sexe}</p>
-                    <p><strong>Taille :</strong> ${data.data.taille} cm</p>
-                    <p><small>Sauvegardé le : ${data.data.timestamp}</small></p>
-                `;
-                outputContainer.style.display = 'block';
-
-                const indicator = document.getElementById(`indicator-${currentSelectedImage}`);
-                if (indicator) {
-                  indicator.style.display = 'block';
-                }
-
-                const resetButton = document.createElement('button');
-                resetButton.textContent = 'Continuer à modifier';
-                resetButton.onclick = function() {
-                    showForm();
-                };
-                outputContainer.appendChild(resetButton);
-                
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            alert('Une erreur est survenue lors de l\'envoi des données.');
-        });
-    });
-  </script>
+  <script src="/ESANTE2/scripts/display.js"></script>
+  <script src="/ESANTE2/scripts/visualiser.js"></script>
 
 </body>
 </html>
