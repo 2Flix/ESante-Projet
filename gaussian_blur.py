@@ -15,7 +15,7 @@ if image is None:
     print("Could not read image")
     sys.exit(1)
 
-# Taille du kernel : calculée à partir de sigma (doit être impair et > 0)
+# Taille du kernel : calculee à partir de sigma (doit etre impair et > 0)
 k = int(6 * sigma + 1)
 if k % 2 == 0:
     k += 1
