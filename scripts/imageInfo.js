@@ -37,9 +37,16 @@ function analyserImage() {
     if (gray > max) max = gray;
   }
 
+  // Conversion des dimensions en millimètres (en supposant 96 DPI)
+  const dpi = 96;
+  const inchToMm = 25.4;
+  const widthMm = (img.naturalWidth / dpi) * inchToMm;
+  const heightMm = (img.naturalHeight / dpi) * inchToMm;
+
   // Affiche les informations analysées dans la page
   info.innerHTML = `
     <strong>Dimensions :</strong> ${img.naturalWidth} x ${img.naturalHeight} px<br>
+    <strong>Taille physique :</strong> ${widthMm.toFixed(2)} mm x ${heightMm.toFixed(2)} mm<br>
     <strong>Niveau de gris :</strong> min = ${min}, max = ${max}
   `;
 }
