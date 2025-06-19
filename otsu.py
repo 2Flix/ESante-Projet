@@ -1,66 +1,103 @@
-import os
-import sys
-import matplotlib.pyplot as plt
-from skimage import io, color, filters, morphology
+import math
 import numpy as np
-import pydicom
+from PIL import Image
+import sys
 
-def read_image(path):
-    ext = os.path.splitext(path)[-1].lower()
-    if ext in ['.jpg', '.jpeg', '.png']:
-        image = io.imread(path)
-        if image.ndim == 3:
-            image = color.rgb2gray(image)
-    elif ext in ['.dcm', '.dicom']:
-        ds = pydicom.dcmread(path)
-        image = ds.pixel_array.astype(np.float32)
-        image -= image.min()
-        image /= image.max()
-    else:
-        raise ValueError(f"Format non supporté : {ext}")
-    
-    # Convertir en niveau de gris sur 0-255
-    image = (image * 255).astype(np.uint8)
-    return image
+threshold_values = {}
+h = [1]
 
-# Vérification des arguments
+def Hist(img):
+    row, col = img.shape 
+    y = np.zeros(256)
+    for i in range(row):
+        for j in range(col):
+            y[img[i, j]] += 1
+    return y
+
+def regenerate_img(img, threshold):
+    row, col = img.shape 
+    y = np.zeros((row, col))
+    for i in range(row):
+        for j in range(col):
+            y[i, j] = 255 if img[i, j] >= threshold else 0
+    return y
+
+def countPixel(h):
+    return np.sum(h[h > 0])
+
+def weight(s, e):
+    return np.sum(h[s:e])
+
+def mean(s, e):
+    w = weight(s, e)
+    return np.sum([h[i] * i for i in range(s, e)]) / float(w) if w != 0 else 0
+
+def variance(s, e):
+    m = mean(s, e)
+    w = weight(s, e)
+    return np.sum([(i - m)**2 * h[i] for i in range(s, e)]) / w if w != 0 else 0
+
+def threshold_calc(h):
+    cnt = countPixel(h)
+    for i in range(1, len(h)):
+        vb = variance(0, i)
+        wb = weight(0, i) / float(cnt)
+        mb = mean(0, i)
+
+        vf = variance(i, len(h))
+        wf = weight(i, len(h)) / float(cnt)
+        mf = mean(i, len(h))
+
+        V2w = wb * vb + wf * vf
+
+        if not math.isnan(V2w):
+            threshold_values[i] = V2w
+
+def get_optimal_threshold():
+    min_V2w = min(threshold_values.values())
+    optimal_threshold = [k for k, v in threshold_values.items() if v == min_V2w]
+    return optimal_threshold[0]
+
+# === MAIN ===
 if len(sys.argv) < 3:
-    print("Usage: python segmentation1.py input_image output_image [threshold]")
+    print("Usage: python otsu.py <input_path> <output_path> [manual_threshold]")
     sys.exit(1)
 
 input_path = sys.argv[1]
 output_path = sys.argv[2]
-threshold_arg = None
+manual_threshold = None
 
-if len(sys.argv) == 4:
+# Vérifier si un seuil manuel est fourni
+if len(sys.argv) > 3:
     try:
-        threshold_arg = int(sys.argv[3])  # seuil entre 0 et 255
-    except ValueError:
-        print("Le seuil doit être un entier entre 0 et 255.")
+        manual_threshold = int(sys.argv[3])
+        if manual_threshold < 0 or manual_threshold > 255:
+            raise ValueError("Le seuil doit être entre 0 et 255")
+    except ValueError as e:
+        print(f"Erreur: {e}", file=sys.stderr)
         sys.exit(1)
 
-# Lire l'image
-image_gray = read_image(input_path)
+try:
+    image = Image.open(input_path).convert("L")
+    img = np.asarray(image)
+except Exception as e:
+    print(f"Erreur lors de l'ouverture de l'image: {e}", file=sys.stderr)
+    sys.exit(1)
 
-# Calcul du seuil
-if threshold_arg is None:
-    threshold = filters.threshold_otsu(image_gray)
+if manual_threshold is not None:
+    # Utiliser le seuil manuel
+    threshold_used = manual_threshold
+    print(f"{threshold_used} (Otsu manuel)")
 else:
-    threshold = threshold_arg
+    # Calculer le seuil Otsu
+    h = Hist(img)
+    threshold_calc(h)
+    threshold_used = get_optimal_threshold()
+    print(f"{threshold_used} (Otsu automatique)")
 
-# ✅ Garde les zones sombres (poumons)
-binary_mask = image_gray < threshold
-
-# Nettoyage du masque
-cleaned_mask = morphology.remove_small_objects(binary_mask, min_size=500)
-cleaned_mask = morphology.binary_closing(cleaned_mask)
-
-# Appliquer le masque
-segmented_image = np.zeros_like(image_gray)
-segmented_image[cleaned_mask] = image_gray[cleaned_mask]
-
-# Sauvegarde
-plt.imsave(output_path, segmented_image, cmap='gray')
-
-# Affiche le seuil utilisé pour PHP
-print(threshold)
+try:
+    res = regenerate_img(img, threshold_used)
+    Image.fromarray(res.astype(np.uint8)).save(output_path)
+except Exception as e:
+    print(f"Erreur lors de la sauvegarde: {e}", file=sys.stderr)
+    sys.exit(1)
