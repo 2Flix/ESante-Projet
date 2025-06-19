@@ -45,16 +45,29 @@ $image = isset($_GET['image']) ? $_GET['image'] : null;
 
       <form id="laplacien-form" action="laplacien.php" method="POST" style="margin-top: 10px;">
         <input type="hidden" name="image" id="laplacien-image" value="">
-        <label for="strength">Force du filtre Laplacien :</label>
+        <label for="strength" style="text-decoration: underline;">Force du filtre Laplacien :</label>
         <input type="number" step="0.1" min="0" name="strength" id="strength" value="1.0" required style="width: 40px;">
+        <h6 style="margin-top: 15px; font-style: italic; color: blue; margin-bottom: 0px; margin-top: 0px"> Le filtre laplacien est un outil qui détecte les contours d'une image en repérant les zones où la luminosité change brusquement. 
+          Augmenter sa force fait ressortir davantage de détails fins mais peut aussi amplifier le bruit indésirable. </h6>
         <button type="submit">Appliquer Laplacien</button>
       </form>
 
       <form id="gaussian-form" action="gaussian_blur.php" method="POST" style="margin-top: 20px;">
         <input type="hidden" name="image" id="gaussian-image" value="">
-        <label for="sigma">Degré de flou :</label>
+        <label for="sigma" style="text-decoration: underline;">Degré de flou :</label>
         <input type="number" step="0.1" min="0.1" name="sigma" id="sigma" value="1.0" required style="width: 40px;">
+        <h6 style="margin-top: 15px; font-style: italic; color: blue; margin-bottom: 0px; margin-top: 0px"> Le flou gaussien adoucit une image en mélangeant chaque pixel avec ses voisins de manière progressive, créant un effet de flou naturel. 
+          Augmenter le degré de flou rend l'image de plus en plus floue, masquant les détails fins et les imperfections. </h6>
         <button type="submit">Appliquer le Flou Gaussien</button>
+      </form>
+
+      <form id="median-form" action="javascript:void(0);" onsubmit="applyMedian(event)" style="margin-top: 20px;">
+        <input type="hidden" name="image" id="median-image" value="" >
+        <label for="median-kernel" style="text-decoration: underline;">Taille du noyau :</label>
+        <input type="number" id="median-kernel" name="kernel" min="3" step="2" value="5" style="width: 40px;" required>
+        <h6 style="margin-top: 15px; font-style: italic; color: blue; margin-bottom: 0px; margin-top: 0px"> Le filtre médian remplace chaque pixel par la valeur médiane de ses pixels voisins, ce qui permet d'éliminer efficacement le bruit tout en préservant les contours nets. 
+          Augmenter la taille du noyau élargit la zone de voisinage analysée, ce qui supprime davantage de bruit mais peut aussi lisser ou déformer les petits détails de l'image. </h6>
+        <button type="submit">Appliquer Filtre Médian</button>
       </form>
 
       <h4 style="margin-bottom: 5px;">Rotation</h4>
@@ -63,7 +76,8 @@ $image = isset($_GET['image']) ? $_GET['image'] : null;
 
       <label style="margin-top: 20px" for="zoom-range">Zoom</label>
       <input type="range" id="zoom-range" min="0" max="1" step="0.001" value="0">
-      
+
+
     </aside>
   </div>
 
@@ -72,8 +86,14 @@ $image = isset($_GET['image']) ? $_GET['image'] : null;
   <script src="/ESANTE2/scripts/filters.js"></script>
   <script src="/ESANTE2/scripts/rotation.js"></script>
 
+<script>
+    // Pour que median.js sache quelle image est sélectionnée
+    window.selectedImageName = "<?php echo $image ?? ''; ?>";
+  </script>
+  <script src="/ESANTE2/scripts/median.js"></script>
+
   <script>
-  // Initialiser le zoom si l'image est deja presente
+  // On va initialiser le zoom si l'image est deja presente
   document.addEventListener('DOMContentLoaded', function() {
     const selectedImage = document.getElementById('selected-image');
     if (selectedImage && selectedImage.src) {
@@ -87,9 +107,13 @@ $image = isset($_GET['image']) ? $_GET['image'] : null;
         if (typeof initRotation === 'function') {
           initRotation();
         }
+        // Initialiser l'image sélectionnée (fonction maintenant dans display.js)
+        if (typeof initSelectedImage === 'function') {
+          initSelectedImage();
+        }
       };
       
-      // Si l'image est deja chargee
+      // Si l'image est déjà chargée
       if (selectedImage.complete) {
         if (typeof initZoom === 'function') {
           initZoom();
@@ -99,6 +123,10 @@ $image = isset($_GET['image']) ? $_GET['image'] : null;
         }
         if (typeof initRotation === 'function') {
           initRotation();
+        }
+        // Initialiser l'image sélectionnée (fonction maintenant dans display.js)
+        if (typeof initSelectedImage === 'function') {
+          initSelectedImage();
         }
       }
     }
