@@ -1,5 +1,5 @@
 # ESanté-Projet
-**Préparation de l’environnement de travail*
+*Préparation de l’environnement de travail*
 
 On propose le logiciel « MAMP »
 
@@ -9,11 +9,12 @@ On propose le logiciel « MAMP »
 
 Remarque : Si on vous propose d’installer un desktop runtime, accepter l’installation.
 
-**Première étape*
+*Première étape*
 
 C:/MAMP/htdocs est le dossier « root » dans lequel vous devrez mettre tous vos fichiers php, afin qu’ils puissent être exécutés par le serveur.
 
 Ouvrir un navigateur, taper « localhost » et lancer le fichier visualiser.php
+
 
 **Important :**
 
