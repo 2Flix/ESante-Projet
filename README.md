@@ -11,10 +11,8 @@ Remarque : Si on vous propose d’installer un desktop runtime, accepter l’ins
 
 *Première étape*
 
-C:/MAMP/htdocs est le dossier « root » dans lequel vous devrez mettre tous vos fichiers, afin qu’ils puissent être exécutés par le serveur.
-
+C:/MAMP/htdocs est le dossier « root » dans lequel vous devrez mettre tous vos fichiers, afin qu’ils puissent être exécutés par le serveur. 
 Ajouter les différents fichiers dans le htdocs à l'intérieur d'un dossier nommé ESANTE2
-
 Ouvrir un navigateur, taper « localhost » et lancer le fichier visualiser.php
 
 
